@@ -1,0 +1,6 @@
+{
+  "name": "TK_SABR",
+  "description": "أداة متقدمة لتحليل وفحص حسابات تيك توك وتقييم مؤشرات الأمان والصحة الرقمية بدون تسجيل دخول",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
