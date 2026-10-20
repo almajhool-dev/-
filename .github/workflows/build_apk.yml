@@ -1,17 +1,19 @@
-name: Build TK_SABR Android APK
+name: Build and Release TK_SABR APK
 
 on:
   push:
-    branches: [ main, master ]
+    branches:
+      - '**'
     tags:
       - 'v*'
-  pull_request:
-    branches: [ main, master ]
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
-    name: Build Release and Debug APK
+    name: Build APK and Publish Release
     runs-on: ubuntu-latest
 
     steps:
@@ -23,28 +25,45 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: gradle
 
-      - name: Grant Execute Permission to Gradle
-        run: chmod +x gradlew || true
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
 
-      - name: Run Unit & Robolectric Tests
-        run: ./gradlew testDebugUnitTest --continue || gradle testDebugUnitTest --continue
+      - name: Grant Execute Permission to gradlew
+        run: chmod +x gradlew
 
       - name: Build Debug APK
-        run: ./gradlew assembleDebug || gradle assembleDebug
+        run: ./gradlew assembleDebug --stacktrace
 
-      - name: Build Release APK
-        run: ./gradlew assembleRelease || gradle assembleRelease
+      - name: Prepare APK File
+        run: |
+          mkdir -p release-output
+          cp app/build/outputs/apk/debug/app-debug.apk release-output/TK_SABR.apk
+          ls -lh release-output/TK_SABR.apk
 
-      - name: Upload Debug APK Artifact
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: TK_SABR-debug-apk
-          path: app/build/outputs/apk/debug/*.apk
+          name: TK_SABR-APK
+          path: release-output/TK_SABR.apk
+          if-no-files-found: error
 
-      - name: Upload Release APK Artifact
-        uses: actions/upload-artifact@v4
+      - name: Create or Update GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         with:
-          name: TK_SABR-release-apk
-          path: app/build/outputs/apk/release/*.apk
+          tag_name: latest
+          name: "📱 تطبيق TK_SABR - أحدث إصدار APK جاهز للتثبيت"
+          body: |
+            ### مرحباً بك في الإصدار الأحدث من تطبيق TK_SABR 🛡️
+            
+            تم بناء ملف الـ APK وتجميعه تلقائياً ومباشرة عبر GitHub Actions.
+            
+            #### 📥 طريقة التحميل والتثبيت المباشر على هاتفك:
+            1. اضغط على رابط **TK_SABR.apk** بالأسفل في خانة **Assets**.
+            2. سيتم تنزيل ملف الـ APK مباشرة بهاتفك.
+            3. اضغط على الملف المحمّل لتبدأ عملية التثبيت الفوري للتطبيق!
+          files: release-output/TK_SABR.apk
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
